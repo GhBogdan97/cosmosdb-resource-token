@@ -24,23 +24,14 @@ namespace ResourceTokenBroker
         private static CosmosClient cosmosClient;
         private static DocumentClient Client;
 
-        // The database we will create
-        //private static Database database;
-
-        // The container we will create.
-        //private static Container container;
-
         // The name of the database and container we will create
         private static string databaseId = "Contoso";
         private static string containerId = "HR Documents"; //collection id when using mongo
 
-        //private static string resourceToken = ""; 
 
-        //private static string ConnectionString = $"mongodb://cosmos-mongo-weu-resource-token:{resourceToken}@cosmos-mongo-weu-resource-token.mongo.cosmos.azure.com:10255/?ssl=true&replicaSet=globaldb&retrywrites=false&maxIdleTimeMS=120000&appName=@cosmos-mongo-weu-resource-token@";
         private static string BrokerConnectionString = $@"AccountKey=etqJ9x5PqQyzePwoQh6sf37j7yQcgOujGVbXpwoLFyHGzFuV7KtrSre0WV3JbUPOMmQsq7wjCXYiLwg3hdBr5w==;
                                                             AccountEndpoint=https://cosmos-sql-weu-resource-token.documents.azure.com:443/";
 
-        //static readonly string utc_date = DateTime.UtcNow.ToString("r");
 
         [FunctionName("RequestAccess")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req, TraceWriter log)
@@ -90,63 +81,18 @@ namespace ResourceTokenBroker
                 Microsoft.Azure.Cosmos.FeedResponse<TestClass> currentResultSet = await queryResultSetIterator.ReadNextAsync();
                 foreach (TestClass family in currentResultSet)
                 {
-                    //families.Add(family);
                     x++;
                 }
             }
+            log.Info($"objects found: ${x}");
+
             return x;
-            //----------------------
 
         }
 
         private static async Task<string> CosmosClientImplementation(TraceWriter log)
         {
             cosmosClient = new CosmosClient(BrokerConnectionString);
-
-            //var docToken = "";
-
-            //try
-            //{
-            //    Microsoft.Azure.Documents.Client.FeedResponse<Microsoft.Azure.Documents.Permission> permissionFeed = await Client.ReadPermissionFeedAsync(UriFactory.CreateUserUri(databaseId, "ContosoAccessUser"));
-            //    var permissions = permissionFeed.ToList();
-
-            //    // Save the permissions list to the in memory cache so we don't have to do this very often
-            //    var cacheExpiry = DateTime.Now.AddHours(1);
-            //    //foreach (var p in permissionFeed)
-            //    //{
-            //    //    if (permissionsCache.ContainsKey(p.Id))
-            //    //    {
-            //    //        permissionsCache.Remove(p.Id);
-            //    //    }
-            //    //    permissionsCache.Add(p.Id, (cacheExpiry, p));
-            //    //}
-            //    var permission = permissions.Where(p => p.ResourceLink == "/dbs/Contoso/colls/Test").FirstOrDefault();
-            //    //Microsoft.Azure.Documents.Permission readP = await Client.ReadPermissionAsync(UriFactory.CreateUserUri(databaseId, "ContosoAccessUser"));
-            //    docToken = permission.Token;
-            //}
-            //catch (Exception ex)
-            //{
-            //    var p2 = new Microsoft.Azure.Documents.Permission
-            //    {
-            //        PermissionMode = Microsoft.Azure.Documents.PermissionMode.All,
-            //        ResourceLink = "/dbs/Contoso/colls/Test",
-            //        //ResourcePartitionKey = new Microsoft.Azure.Documents.PartitionKey("/test"),
-            //        Id = "ContosoAccessUser6" //needs to be unique for a given user
-            //    };
-            //    // TODO: Did not like expire time so have disabled
-            //    // var ro = new RequestOptions
-            //    // {
-            //    //     ResourceTokenExpirySeconds = expires
-            //    // };
-            //    Microsoft.Azure.Documents.Permission permission = await Client.CreatePermissionAsync(u.SelfLink, p2);
-            //    docToken = permission.Token;
-            //}
-
-            ///dbs/Contoso/colls/Test
-            //var Client2 = new DocumentClient(new Uri("https://cosmos-sql-weu-resource-token.documents.azure.com:443/"), new NetworkCredential("", docToken).SecurePassword);
-            //var db = await Client2.ReadDatabaseAsync(Microsoft.Azure.Documents.Client.UriFactory.CreateDatabaseUri("Contoso"));
-            //var response = await Client2.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, "Test", "7a17c459-31f4-4af8-aac2-ffef8c3e3c4a"));
-            //var x = (TestClass)(dynamic)response.Resource;
 
             Container container = cosmosClient.GetContainer(databaseId, containerId);
             var token = "";
@@ -197,7 +143,6 @@ namespace ResourceTokenBroker
                 var permissions = permissionFeed.ToList();
 
                 var permission = permissions.Where(p => p.ResourceLink == $"/dbs/{databaseId}/colls/{containerId}").FirstOrDefault();
-                //Microsoft.Azure.Documents.Permission readP = await Client.ReadPermissionAsync(UriFactory.CreateUserUri(databaseId, "ContosoAccessUser"));
                 docToken = permission.Token;
             }
             catch (Exception ex)
@@ -206,7 +151,7 @@ namespace ResourceTokenBroker
                 {
                     PermissionMode = Microsoft.Azure.Documents.PermissionMode.All,
                     ResourceLink = $"/dbs/{databaseId}/colls/{containerId}",
-                    //ResourcePartitionKey = new Microsoft.Azure.Documents.PartitionKey("/test"),
+                    //ResourcePartitionKey = new Microsoft.Azure.Documents.PartitionKey("/location"),
                     Id = new Guid().ToString() //needs to be unique for a given user
                 };
                 Microsoft.Azure.Documents.Permission permission = await Client.CreatePermissionAsync(u.SelfLink, p2);
