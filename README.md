@@ -1,0 +1,1 @@
+# cosmosdb-resource-token
